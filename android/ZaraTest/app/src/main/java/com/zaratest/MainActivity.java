@@ -125,7 +125,6 @@ public class MainActivity extends AppCompatActivity {
         "Android.log('Prices: ' + priceInfo);" +
         "Android.log('JSON-LD: ' + (jsonld || 'nenhum'));" +
         "Android.log('Body preview: ' + document.body.innerHTML.substring(0, 500));" +
-        (window.location.href ? "" : "") +
         "";
 
     /** Classe exposta para o JavaScript da página enviar resultados de volta */
