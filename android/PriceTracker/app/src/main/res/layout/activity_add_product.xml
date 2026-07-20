@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F9F7F4"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="← Voltar"
+        android:textColor="#6B7280"
+        android:textSize="16sp"
+        android:onClick="onVoltarClick"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginBottom="28dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Adicionar produto"
+        android:textColor="#6B21A8"
+        android:textSize="28sp"
+        android:fontFamily="serif"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cole o link do produto"
+        android:textColor="#4B4A4A"
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
+
+    <EditText
+        android:id="@+id/etUrl"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="https://www.zara.com/br/pt/..."
+        android:textColor="#2D2B2B"
+        android:textColorHint="#9CA3AF"
+        android:textSize="14sp"
+        android:background="@android:color/white"
+        android:padding="12dp"
+        android:inputType="textUri"
+        android:singleLine="true"
+        android:layout_marginBottom="20dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Preço meta (opcional)"
+        android:textColor="#4B4A4A"
+        android:textSize="15sp"
+        android:layout_marginBottom="6dp" />
+
+    <EditText
+        android:id="@+id/etMeta"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Ex: 299.00"
+        android:textColor="#2D2B2B"
+        android:textColorHint="#9CA3AF"
+        android:textSize="14sp"
+        android:background="@android:color/white"
+        android:padding="12dp"
+        android:inputType="numberDecimal"
+        android:singleLine="true"
+        android:layout_marginBottom="32dp" />
+
+    <TextView
+        android:id="@+id/btnAdicionar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center"
+        android:text="Adicionar"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="#6B21A8"
+        android:onClick="onAdicionarClick"
+        android:clickable="true"
+        android:focusable="true" />
+
+</LinearLayout>
