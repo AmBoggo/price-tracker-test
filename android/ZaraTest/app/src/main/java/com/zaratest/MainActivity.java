@@ -25,6 +25,29 @@ public class MainActivity extends AppCompatActivity {
         "https://www.zara.com/br/pt/jaqueta-acetinada-com-bolsos-p01255904.html?v1=546167613&v2=2510426",
     };
 
+    // JavaScript ultra-simples com try-catch
+    private static final String EXTRACT_JS = "" +
+        "(function(){" +
+        "  try{" +
+        "    var r={};" +
+        "    r.title=document.title||'sem title';" +
+        "    r.url=window.location.href||'?';" +
+        "    r.bodyLen=document.body?document.body.innerHTML.length:0;" +
+        "    var h1=document.querySelector('h1');" +
+        "    r.h1=h1?h1.innerText:'sem h1';" +
+        "    var ps=[];" +
+        "    var all=document.querySelectorAll('[class*=pric],[class*=Pric],.price,span');" +
+        "    for(var i=0;i<Math.min(all.length,50);i++){" +
+        "      var t=all[i].innerText||'';" +
+        "      if(t.match(/R\\$|USD|EUR|\\d+,\\d{2}/)) ps.push(t.trim());" +
+        "    }" +
+        "    r.prices=ps.slice(0,5);" +
+        "    r.pricesCount=ps.length;" +
+        "    r.allText=document.body?document.body.innerText.substring(0,500):'';" +
+        "    return JSON.stringify(r);" +
+        "  }catch(e){ return 'ERROR:'+e.message; }" +
+        "})()";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,30 +76,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setLoadWithOverviewMode(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
-        // JavaScript ultra-simples com try-catch
-        final String EXTRACT_JS = "" +
-            "(function(){" +
-            "  try{" +
-            "    var r={};" +
-            "    r.title=document.title||'sem title';" +
-            "    r.url=window.location.href||'?';" +
-            "    r.bodyLen=document.body?document.body.innerHTML.length:0;" +
-            "    var h1=document.querySelector('h1');" +
-            "    r.h1=h1?h1.innerText:'sem h1';" +
-            "    var ps=[];" +
-            "    var all=document.querySelectorAll('[class*=pric],[class*=Pric],.price,span');" +
-            "    for(var i=0;i<Math.min(all.length,50);i++){" +
-            "      var t=all[i].innerText||'';" +
-            "      if(t.match(/R\\$|USD|EUR|\\d+,\\d{2}/)) ps.push(t.trim());" +
-            "    }" +
-            "    r.prices=ps.slice(0,5);" +
-            "    r.pricesCount=ps.length;" +
-            "    r.allText=document.body?document.body.innerText.substring(0,500):'';" +
-            "    return JSON.stringify(r);" +
-            "  }catch(e){ return 'ERROR:'+e.message; }" +
-            "})()";
-
-        webView.setWebViewClient(new WebViewClient() {
+                webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 log("✓ Página carregada: " + url);
