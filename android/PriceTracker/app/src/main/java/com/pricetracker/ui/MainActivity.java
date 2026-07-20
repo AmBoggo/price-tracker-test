@@ -47,6 +47,13 @@ public class MainActivity extends AppCompatActivity {
         // Agenda verificação automática 3x/dia
         PriceScheduler.agendar(this);
 
+        // Verifica preços imediatamente (primeira vez que abre)
+        androidx.work.OneTimeWorkRequest checkRequest =
+            new androidx.work.OneTimeWorkRequest.Builder(
+                com.pricetracker.worker.PriceCheckWorker.class)
+            .build();
+        androidx.work.WorkManager.getInstance(this).enqueue(checkRequest);
+
         carregarProdutos();
     }
 

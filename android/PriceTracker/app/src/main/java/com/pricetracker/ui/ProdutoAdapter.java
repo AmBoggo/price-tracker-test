@@ -49,7 +49,7 @@ public class ProdutoAdapter extends RecyclerView.Adapter<ProdutoAdapter.ViewHold
         Produto p = produtos.get(position);
 
         // Título
-        holder.tvTitulo.setText(p.titulo != null ? p.titulo : "Carregando...");
+        holder.tvTitulo.setText(p.titulo != null ? p.titulo : "Aguardando verificação...");
 
         // Site badge
         holder.tvSite.setText(p.site != null ? p.site : "");
