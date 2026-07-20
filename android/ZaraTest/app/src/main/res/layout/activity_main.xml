@@ -22,16 +22,21 @@
         android:layout_weight="1" />
 
     <!-- Log area -->
-    <TextView
-        android:id="@+id/tvLog"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:padding="12dp"
-        android:textSize="12sp"
-        android:fontFamily="monospace"
-        android:background="#1A1A1A"
-        android:textColor="#00FF00"
-        android:scrollbars="vertical"
-        android:text="=== LOG ===\n" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1A1A1A">
+
+        <TextView
+            android:id="@+id/tvLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:textColor="#00FF00"
+            android:text="=== LOG ===\n" />
+    </ScrollView>
 
 </LinearLayout>
