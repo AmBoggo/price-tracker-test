@@ -52,15 +52,16 @@ public class MainActivity extends AppCompatActivity {
         " }" +
         " ps.sort(function(a,b){return a-b;});" + // menor preço = desconto
         " var title=document.title||'';" +
-        " var titleClean=title.replace(/\\|.*/,'').trim();" + // remove "| ZARA" suffix
-        " var imgs=document.querySelectorAll('img');var img='';" +
-        " for(var i=0;i<imgs.length;i++){" +
-        "   if(imgs[i].src&&!imgs[i].src.includes('logo')&&!imgs[i].src.includes('.svg')" +
-        "      &&imgs[i].naturalWidth>150){img=imgs[i].src;break;}" +
-        " }" +
-        " if(!img){" + // fallback: meta og:image
-        "   var og=document.querySelector('meta[property=og:image]');" +
-        "   if(og)img=og.getAttribute('content');" +
+        " var titleClean=title.replace(/\\|.*/,'').trim();" +
+        " var img='';" +
+        " var og=document.querySelector('meta[property=og:image]');" +
+        " if(og)img=og.getAttribute('content');" +
+        " if(!img){" +
+        "   var imgs=document.querySelectorAll('img');" +
+        "   for(var i=0;i<imgs.length;i++){" +
+        "     var s=imgs[i].src||imgs[i].getAttribute('data-src')||'';" +
+        "     if(s&&s.indexOf('data:')==-1&&s.indexOf('pixel')==-1&&s.indexOf('svg')==-1){img=s;break;}" +
+        "   }" +
         " }" +
         " return JSON.stringify({prices:ps,title:titleClean,image:img});" +
         "}catch(e){return 'ERROR:'+e.message;}})()";
