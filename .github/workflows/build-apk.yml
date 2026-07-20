@@ -2,7 +2,7 @@ name: Build PriceTracker APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, stable-working ]
   workflow_dispatch:
 
 jobs:
