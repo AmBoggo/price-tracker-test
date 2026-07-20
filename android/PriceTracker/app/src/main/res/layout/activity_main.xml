@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -13,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="20dp">
+        android:layout_marginBottom="12dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -39,6 +38,18 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/btnRefresh"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:gravity="center"
+            android:text="↻"
+            android:textColor="#6B21A8"
+            android:textSize="24sp"
+            android:onClick="onRefreshClick"
+            android:clickable="true"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
             android:id="@+id/btnAdd"
             android:layout_width="48dp"
             android:layout_height="48dp"
@@ -49,9 +60,19 @@
             android:textStyle="bold"
             android:background="@drawable/circle_purple"
             android:onClick="onAddClick"
-            android:clickable="true"
-            android:focusable="true" />
+            android:clickable="true" />
     </LinearLayout>
+
+    <!-- Status bar -->
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:textColor="#A78BFA"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp" />
 
     <!-- Loading -->
     <ProgressBar
@@ -78,9 +99,16 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="Nenhum produto adicionado ainda.\n\nToque em + para adicionar um link de produto da Zara, Renner, Sephora e outros."
+        android:text="Nenhum produto adicionado.\n\nToque em + para adicionar."
         android:textColor="#9CA3AF"
         android:textSize="16sp"
         android:visibility="visible" />
+
+    <!-- WebView invisível para scraping (roda na thread principal) -->
+    <WebView
+        android:id="@+id/scrapWebView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="invisible" />
 
 </LinearLayout>
