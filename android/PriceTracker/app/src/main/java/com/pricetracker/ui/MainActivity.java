@@ -53,17 +53,31 @@ public class MainActivity extends AppCompatActivity {
         " ps.sort(function(a,b){return a-b;});" + // menor preço = desconto
         " var title=document.title||'';" +
         " var titleClean=title.replace(/\\|.*/,'').trim();" +
-        " var img='';" +
+        " var img=''; var debug=[];" +
+        " // Tenta og:image" +
         " var og=document.querySelector('meta[property=og:image]');" +
-        " if(og)img=og.getAttribute('content');" +
-        " if(!img){" +
-        "   var imgs=document.querySelectorAll('img');" +
-        "   for(var i=0;i<imgs.length;i++){" +
-        "     var s=imgs[i].src||imgs[i].getAttribute('data-src')||'';" +
-        "     if(s&&s.indexOf('data:')==-1&&s.indexOf('pixel')==-1&&s.indexOf('svg')==-1){img=s;break;}" +
+        " if(og){img=og.getAttribute('content'); debug.push('og:'+img.substring(0,50));}" +
+        " // Tenta twitter:image" +
+        " if(!img){var tw=document.querySelector('meta[name=twitter:image],meta[property=twitter:image]');" +
+        "   if(tw){img=tw.getAttribute('content'); debug.push('tw:'+img.substring(0,50));}}" +
+        " // Tenta schema.org image" +
+        " if(!img){var sc=document.querySelector('meta[itemprop=image]');" +
+        "   if(sc){img=sc.getAttribute('content'); debug.push('schema:'+img.substring(0,50));}}" +
+        " // Tenta todas as imgs" +
+        " var imgs=document.querySelectorAll('img,picture img,source');" +
+        " debug.push('imgs total:'+imgs.length);" +
+        " if(!img&&imgs.length>0){" +
+        "   for(var i=0;i<Math.min(imgs.length,20);i++){" +
+        "     var s=imgs[i].src||imgs[i].getAttribute('data-src')||imgs[i].getAttribute('srcset')||'';" +
+        "     if(i<5) debug.push('img['+i+']:'+(s.substring(0,60)||'vazio')+' w:'+imgs[i].naturalWidth);" +
+        "     if(!img&&s&&s.indexOf('http')!=-1&&s.indexOf('data:')==-1&&s.indexOf('pixel')==-1&&s.indexOf('.svg')==-1){" +
+        "       img=s; debug.push('selected:img['+i+']');" +
+        "     }" +
         "   }" +
         " }" +
-        " return JSON.stringify({prices:ps,title:titleClean,image:img});" +
+        " // Debug: mostra o que encontrou" +
+        " var dbg=debug.join(' | ');" +
+        " return JSON.stringify({prices:ps,title:titleClean,image:img,debug:dbg});" +
         "}catch(e){return 'ERROR:'+e.message;}})()";
 
     @Override
@@ -168,15 +182,16 @@ public class MainActivity extends AppCompatActivity {
                                     // Menor preço = preço com desconto
                                     preco = prices.getDouble(0);
                                 }
-                                String titulo = obj.optString("title", "");
-                                String imagem = obj.optString("image", "");
+                                String titulo = obj.optString("title","");
+                                                                String imagem = obj.optString("image","");
+                                                                String debug = obj.optString("debug","");
 
-                                if (preco > 0) {
-                                    enviarPreco(produto, preco,
-                                        titulo.isEmpty() ? null : titulo,
-                                        imagem.isEmpty() ? null : imagem);
-                                }
-                                tvStatus.setVisibility(View.GONE);
+                                                                if (preco > 0) {
+                                                                    enviarPreco(produto, preco,
+                                                                        titulo.isEmpty() ? null : titulo,
+                                                                        imagem.isEmpty() ? null : imagem);
+                                                                }
+                                                                tvStatus.setText("OK " + titulo + " | img:" + (imagem.isEmpty()?"NONE":imagem.substring(0,30)) + " | " + debug.substring(0, Math.min(80, debug.length())));
 
                                 // Verifica próximo produto
                                 verificarProximo(produto);
