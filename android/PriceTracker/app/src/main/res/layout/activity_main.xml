@@ -104,11 +104,11 @@
         android:textSize="16sp"
         android:visibility="visible" />
 
-    <!-- WebView invisível para scraping (roda na thread principal) -->
+    <!-- WebView para scraping (pequeno, fica atrás do conteúdo) -->
     <WebView
         android:id="@+id/scrapWebView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
         android:visibility="invisible" />
 
 </LinearLayout>
