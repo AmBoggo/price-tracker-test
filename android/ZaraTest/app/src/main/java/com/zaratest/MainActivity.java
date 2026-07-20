@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
 
     // URLs de teste da Zara
     private static final String[] TEST_URLS = {
-        "https://www.zara.com/br/pt/camiseta-basica-l2562950.html",
+        "https://www.zara.com/br/pt/jaqueta-acetinada-com-bolsos-p01255904.html?v1=546167613&v2=2510426",
     };
 
     @Override
@@ -53,30 +53,28 @@ public class MainActivity extends AppCompatActivity {
         settings.setLoadWithOverviewMode(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
-        // JavaScript enxuto que retorna JSON direto
+        // JavaScript ultra-simples com try-catch
         final String EXTRACT_JS = "" +
-            "JSON.stringify({" +
-            "  title: document.title || ''," +
-            "  url: window.location.href || ''," +
-            "  bodyLen: document.body ? document.body.innerHTML.length : 0," +
-            "  h1: (function(){var h=document.querySelector('h1');return h?h.innerText:'sem h1';})()," +
-            "  prices: (function(){" +
+            "(function(){" +
+            "  try{" +
+            "    var r={};" +
+            "    r.title=document.title||'sem title';" +
+            "    r.url=window.location.href||'?';" +
+            "    r.bodyLen=document.body?document.body.innerHTML.length:0;" +
+            "    var h1=document.querySelector('h1');" +
+            "    r.h1=h1?h1.innerText:'sem h1';" +
             "    var ps=[];" +
-            "    var sel=['.price__amount','[data-qa=price]','.price','.product-price','.product-price__value','[class*=pric]'];" +
-            "    for(var i=0;i<sel.length;i++){" +
-            "      var els=document.querySelectorAll(sel[i]);" +
-            "      for(var j=0;j<els.length&&ps.length<10;j++){" +
-            "        var t=els[j].innerText.trim();" +
-            "        if(t&&t.match(/\\d/)) ps.push(t);" +
-            "      }" +
+            "    var all=document.querySelectorAll('[class*=pric],[class*=Pric],.price,span');" +
+            "    for(var i=0;i<Math.min(all.length,50);i++){" +
+            "      var t=all[i].innerText||'';" +
+            "      if(t.match(/R\\$|USD|EUR|\\d+,\\d{2}/)) ps.push(t.trim());" +
             "    }" +
-            "    return ps;" +
-            "  })()," +
-            "  ogImage: (function(){var m=document.querySelector('meta[property=og:image]');return m?m.getAttribute('content'):'';})()," +
-            "  jsonld: (function(){var s=document.querySelectorAll('script[type=\"application/ld+json\"]');return s.length>0?s[0].innerText.substring(0,200):'nenhum';})()," +
-            "  snippet: document.body ? document.body.innerText.substring(0,500) : 'sem body'," +
-            "  accessDenied: document.title === 'Access Denied'" +
-            "})";
+            "    r.prices=ps.slice(0,5);" +
+            "    r.pricesCount=ps.length;" +
+            "    r.allText=document.body?document.body.innerText.substring(0,500):'';" +
+            "    return JSON.stringify(r);" +
+            "  }catch(e){ return 'ERROR:'+e.message; }" +
+            "})()";
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -85,34 +83,7 @@ public class MainActivity extends AppCompatActivity {
                 tvStatus.setText("Extraindo dados...");
                 
                 // Aguarda a página terminar de carregar JS, depois extrai
-                view.postDelayed(() -> {
-                    view.evaluateJavascript(EXTRACT_JS, value -> {
-                        // value volta como string JSON entre aspas
-                        if (value != null && !"null".equals(value) && value.length() > 2) {
-                            // Remove as aspas externas (evaluateJavascript retorna "json_string")
-                            String json = value;
-                            if (json.startsWith("\"") && json.endsWith("\"")) {
-                                json = json.substring(1, json.length() - 1);
-                                json = json.replace("\\\"", "\"").replace("\\\\", "\\");
-                            }
-                            log("=== RESULTADO ===");
-                            log(json);
-                            
-                            // Verifica se foi bloqueado
-                            if (json.contains("\"accessDenied\":true")) {
-                                tvStatus.setText("❌ ACCESS DENIED");
-                                log("⚠️ Akamai bloqueou a WebView");
-                            } else if (json.contains("\"prices\":[]")) {
-                                tvStatus.setText("⚠️ Página carregou mas sem preço");
-                            } else {
-                                tvStatus.setText("✅ PREÇO ENCONTRADO!");
-                            }
-                        } else {
-                            log("⚠️ evaluateJavascript retornou vazio/null");
-                            tvStatus.setText("❌ Falha na extração");
-                        }
-                    });
-                }, 5000); // Espera 5 segundos pra JS terminar de carregar
+                view.postDelayed(() -> doExtract(view), 5000);
             }
 
             @Override
@@ -131,6 +102,36 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 tvStatus.setText("Carregando: " + newProgress + "%");
+            }
+        });
+    }
+
+    private void doExtract(WebView view) {
+        view.evaluateJavascript(EXTRACT_JS, value -> {
+            log("JS raw value: " + (value == null ? "NULL" : value.substring(0, Math.min(100, value.length()))));
+            
+            if (value == null || "null".equals(value) || value.length() < 3) {
+                log("⚠️ Resultado vazio. Tentando novamente em 3s...");
+                view.postDelayed(() -> doExtract(view), 3000);
+                return;
+            }
+            
+            // Remove aspas externas
+            String json = value;
+            if (json.startsWith("\"") && json.endsWith("\"")) {
+                json = json.substring(1, json.length() - 1);
+                json = json.replace("\\\"", "\"").replace("\\\\", "\\");
+            }
+            
+            log("=== RESULTADO ===");
+            log(json);
+            
+            if (json.contains("\"prices\":[]")) {
+                tvStatus.setText("⚠️ Sem preço encontrado");
+            } else if (json.contains("ERROR:")) {
+                tvStatus.setText("❌ Erro JS");
+            } else {
+                tvStatus.setText("✅ Dados extraídos!");
             }
         });
     }
