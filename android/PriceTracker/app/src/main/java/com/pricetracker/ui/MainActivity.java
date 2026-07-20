@@ -46,11 +46,23 @@ public class MainActivity extends AppCompatActivity {
         "(function(){try{" +
         " var ps=[];var fullText=document.body?document.body.innerText:'';" +
         " var rx=/R\\$\\s*[\\d.,]+/g;var m;" +
-        " while((m=rx.exec(fullText))!==null) ps.push(m[0]);" +
+        " while((m=rx.exec(fullText))!==null){" +
+        "   var v=m[0].replace('R$','').replace('.','').replace(',','.').trim();" +
+        "   ps.push(parseFloat(v));" +
+        " }" +
+        " ps.sort(function(a,b){return a-b;});" + // menor preço = desconto
         " var title=document.title||'';" +
+        " var titleClean=title.replace(/\\|.*/,'').trim();" + // remove "| ZARA" suffix
         " var imgs=document.querySelectorAll('img');var img='';" +
-        " for(var i=0;i<imgs.length;i++){if(imgs[i].src&&imgs[i].width>50){img=imgs[i].src;break;}}" +
-        " return JSON.stringify({prices:ps,title:title,image:img});" +
+        " for(var i=0;i<imgs.length;i++){" +
+        "   if(imgs[i].src&&!imgs[i].src.includes('logo')&&!imgs[i].src.includes('.svg')" +
+        "      &&imgs[i].naturalWidth>150){img=imgs[i].src;break;}" +
+        " }" +
+        " if(!img){" + // fallback: meta og:image
+        "   var og=document.querySelector('meta[property=og:image]');" +
+        "   if(og)img=og.getAttribute('content');" +
+        " }" +
+        " return JSON.stringify({prices:ps,title:titleClean,image:img});" +
         "}catch(e){return 'ERROR:'+e.message;}})()";
 
     @Override
@@ -152,10 +164,8 @@ public class MainActivity extends AppCompatActivity {
                                 JSONArray prices = obj.optJSONArray("prices");
                                 double preco = 0;
                                 if (prices != null && prices.length() > 0) {
-                                    String ps = prices.getString(0)
-                                            .replace("R$", "").replace(".", "")
-                                            .replace(",", ".").trim();
-                                    preco = Double.parseDouble(ps);
+                                    // Menor preço = preço com desconto
+                                    preco = prices.getDouble(0);
                                 }
                                 String titulo = obj.optString("title", "");
                                 String imagem = obj.optString("image", "");

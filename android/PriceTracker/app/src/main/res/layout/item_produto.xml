@@ -46,7 +46,7 @@
                     android:textColor="#2D2B2B"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:maxLines="2"
+                    android:maxLines="3"
                     android:ellipsize="end" />
 
                 <TextView
