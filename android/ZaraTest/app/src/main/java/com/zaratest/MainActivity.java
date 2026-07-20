@@ -29,20 +29,27 @@ public class MainActivity extends AppCompatActivity {
     private static final String EXTRACT_JS = "" +
         "(function(){" +
         "  try{" +
+        "    // Busca por seletores CSS comuns" +
         "    var ps=[];" +
         "    var all=document.querySelectorAll('[class*=pric],[class*=Pric],.price,span');" +
         "    for(var i=0;i<Math.min(all.length,50);i++){" +
         "      var t=all[i].innerText||'';" +
         "      if(t.match(/R\\$|USD|EUR|\\d+,\\d{2}/)) ps.push(t.trim());" +
         "    }" +
+        "    // Fallback: regex no texto inteiro da página" +
+        "    var fullText=document.body?document.body.innerText:'';" +
+        "    var rx=/R\\$\\s*[\\d.,]+/g;" +
+        "    var m, rxPrices=[];" +
+        "    while((m=rx.exec(fullText))!==null) rxPrices.push(m[0].trim());" +
+        "    // Junta e deduplica" +
+        "    var allPrices=ps.concat(rxPrices).filter(function(v,i,a){return a.indexOf(v)===i});" +
         "    var r={" +
-        "      prices:ps.slice(0,5)," +
-        "      pricesCount:ps.length," +
+        "      prices:allPrices.slice(0,5)," +
+        "      pricesCount:allPrices.length," +
         "      title:document.title||'sem title'," +
         "      h1:(document.querySelector('h1')||{}).innerText||'sem h1'," +
         "      url:window.location.href||'?'," +
-        "      bodyLen:document.body?document.body.innerHTML.length:0," +
-        "      allText:document.body?document.body.innerText.substring(0,500):''" +
+        "      bodyLen:document.body?document.body.innerHTML.length:0" +
         "    };" +
         "    return JSON.stringify(r);" +
         "  }catch(e){ return 'ERROR:'+e.message; }" +
