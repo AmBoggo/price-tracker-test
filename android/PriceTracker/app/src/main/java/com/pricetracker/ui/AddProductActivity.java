@@ -66,6 +66,15 @@ public class AddProductActivity extends AppCompatActivity {
                 btn.setEnabled(true);
                 if (response.isSuccessful()) {
                     Toast.makeText(AddProductActivity.this, "Produto adicionado!", Toast.LENGTH_SHORT).show();
+
+                    // Dispara verificação de preço imediatamente
+                    androidx.work.OneTimeWorkRequest checkRequest =
+                        new androidx.work.OneTimeWorkRequest.Builder(
+                            com.pricetracker.worker.PriceCheckWorker.class)
+                        .build();
+                    androidx.work.WorkManager.getInstance(AddProductActivity.this)
+                        .enqueue(checkRequest);
+
                     finish();
                 } else if (response.code() == 409) {
                     Toast.makeText(AddProductActivity.this, "Produto já cadastrado", Toast.LENGTH_SHORT).show();

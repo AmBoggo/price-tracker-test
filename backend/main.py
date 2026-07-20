@@ -161,6 +161,7 @@ async def add_produto(body: ProdutoCreate):
 
     def _insert():
         db = sqlite3.connect(DB_PATH)
+        db.row_factory = sqlite3.Row
         try:
             cur = db.execute(
                 """INSERT INTO produtos (url, preco_meta, site, criado_em)
