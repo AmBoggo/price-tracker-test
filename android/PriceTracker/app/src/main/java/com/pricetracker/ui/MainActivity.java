@@ -44,26 +44,21 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String EXTRACT_JS = "" +
         "(function(){try{" +
-        " var ps=[];var fullText=document.body?document.body.innerText:'';" +
-        " var rx=/R\\$\\s*[\\d.,]+/g;var m;" +
-        " while((m=rx.exec(fullText))!==null){" +
-        "   var v=m[0].replace('R$','').replace('.','').replace(',','.').trim();" +
-        "   ps.push(parseFloat(v));" +
+        " var ps=[],t=document.body?document.body.innerText:'';" +
+        " var m,rx=/R\\$/g;" +
+        " while((m=rx.exec(t))!==null){" +
+        "   var v=t.substring(m.index).match(/[\\d.,]+/);" +
+        "   if(v){var x=parseFloat(v[0].replace('.','').replace(',','.'));if(!isNaN(x))ps.push(x);}" +
         " }" +
-        " ps.sort(function(a,b){return a-b;});" + // menor preço = desconto
-        " var title=document.title||'';" +
-        " var titleClean=title.replace(/\\|.*/,'').trim();" + // remove "| ZARA" suffix
-        " var imgs=document.querySelectorAll('img');var img='';" +
-        " for(var i=0;i<imgs.length;i++){" +
-        "   if(imgs[i].src&&!imgs[i].src.includes('logo')&&!imgs[i].src.includes('.svg')" +
-        "      &&imgs[i].naturalWidth>150){img=imgs[i].src;break;}" +
-        " }" +
-        " if(!img){" + // fallback: meta og:image
-        "   var og=document.querySelector('meta[property=og:image]');" +
-        "   if(og)img=og.getAttribute('content');" +
-        " }" +
-        " return JSON.stringify({prices:ps,title:titleClean,image:img});" +
-        "}catch(e){return 'ERROR:'+e.message;}})()";
+        " if(ps.length>1)ps.sort(function(a,b){return a-b});" +
+        " var title=document.title||'';title=title.replace(/\\|.*/,'').trim();" +
+        " var img='';" +
+        " var og=document.querySelector('meta[property=og:image]');" +
+        " if(og)img=og.getAttribute('content');" +
+        " if(!img){var im=document.querySelectorAll('img');" +
+        "   for(var i=0;i<im.length;i++){var s=im[i].src||'';if(s&&s.indexOf('data:')==-1&&s.indexOf('pixel')==-1){img=s;break}}}" +
+        " return JSON.stringify({prices:ps,title:title,image:img});" +
+        "}catch(e){return JSON.stringify({error:e.message});}})()";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,28 +69,13 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         tvEmpty = findViewById(R.id.tvEmpty);
         tvStatus = findViewById(R.id.tvStatus);
+        scrapWebView = findViewById(R.id.scrapWebView);
 
         recycler.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ProdutoAdapter(new ArrayList<>(), this::onProdutoClick);
         recycler.setAdapter(adapter);
 
-        // WebView invisível para scraping
-        scrapWebView = findViewById(R.id.scrapWebView);
-        setupScrapWebView();
-
-        // Agenda verificação 3x/dia
-        PriceScheduler.agendar(this);
-
-        carregarEVerificar();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        carregarEVerificar();
-    }
-
-    private void setupScrapWebView() {
+        // ⭐ WebViewClient configurado UMA VEZ
         WebSettings s = scrapWebView.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
@@ -103,6 +83,73 @@ public class MainActivity extends AppCompatActivity {
             "Mozilla/5.0 (Linux; Android 14; SM-S908B) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
         );
+        scrapWebView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                view.postDelayed(() -> {
+                    view.evaluateJavascript(EXTRACT_JS, value -> {
+                        processarScraping(value);
+                    });
+                }, 4000);
+            }
+        });
+
+        PriceScheduler.agendar(this);
+        carregarProdutos();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        carregarProdutos();
+    }
+
+    // ⭐ Produto que está sendo verificado agora
+    private Produto scrapAtual;
+
+    private void processarScraping(String value) {
+        Produto p = scrapAtual;
+        scrapAtual = null;
+        if (p == null || value == null || value.equals("null")) {
+            tvStatus.setVisibility(View.GONE);
+            return;
+        }
+
+        try {
+            String json = value;
+            if (json.startsWith("\"") && json.endsWith("\""))
+                json = json.substring(1, json.length()-1).replace("\\\"","\"").replace("\\\\","\\");
+            JSONObject obj = new JSONObject(json);
+
+            if (obj.has("error")) {
+                tvStatus.setText("Erro: " + obj.optString("error"));
+            } else {
+                JSONArray prices = obj.optJSONArray("prices");
+                double preco = 0;
+                if (prices != null && prices.length() > 0) preco = prices.getDouble(0);
+                String titulo = obj.optString("title","");
+                String imagem = obj.optString("image","");
+
+                if (preco > 0) {
+                    RetrofitClient.getService()
+                        .registrarPreco(p.id, new PrecoSubmit(preco,
+                            titulo.isEmpty() ? null : titulo,
+                            imagem.isEmpty() ? null : imagem))
+                        .enqueue(new Callback<Produto>() {
+                            @Override public void onResponse(Call<Produto> c, Response<Produto> r) {
+                                tvStatus.setText("✓ " + titulo);
+                                carregarProdutos();
+                                tvStatus.postDelayed(() -> tvStatus.setVisibility(View.GONE), 2000);
+                            }
+                            @Override public void onFailure(Call<Produto> c, Throwable t) {
+                                tvStatus.setVisibility(View.GONE);
+                            }
+                        });
+                }
+            }
+        } catch (Exception e) {
+            tvStatus.setText("Erro parse: " + e.getMessage());
+        }
     }
 
     public void onAddClick(View view) {
@@ -110,163 +157,49 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onRefreshClick(View view) {
-        carregarEVerificar();
+        carregarProdutos();
     }
 
-    private void carregarEVerificar() {
-        progressBar.setVisibility(View.VISIBLE);
+    private void carregarProdutos() {
         tvEmpty.setVisibility(View.GONE);
-
-        ApiService api = RetrofitClient.getService();
-        api.listarProdutos().enqueue(new Callback<List<Produto>>() {
-            @Override
-            public void onResponse(Call<List<Produto>> call, Response<List<Produto>> response) {
-                progressBar.setVisibility(View.GONE);
+        RetrofitClient.getService().listarProdutos().enqueue(new Callback<List<Produto>>() {
+            @Override public void onResponse(Call<List<Produto>> call, Response<List<Produto>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     produtosAtuais = response.body();
                     adapter.atualizar(produtosAtuais);
                     tvEmpty.setVisibility(produtosAtuais.isEmpty() ? View.VISIBLE : View.GONE);
 
-                    // Verifica se tem produto sem preço
-                    for (Produto p : produtosAtuais) {
-                        if (p.precoAtual == null) {
-                            verificarPreco(p);
-                            break; // verifica um por vez
+                    if (scrapAtual == null) {
+                        for (Produto p : produtosAtuais) {
+                            if (p.precoAtual == null) {
+                                scrapAtual = p;
+                                tvStatus.setText("Verificando...");
+                                tvStatus.setVisibility(View.VISIBLE);
+                                scrapWebView.loadUrl(p.url);
+                                break;
+                            }
                         }
                     }
                 }
             }
-
-            @Override
-            public void onFailure(Call<List<Produto>> call, Throwable t) {
-                progressBar.setVisibility(View.GONE);
-                tvEmpty.setVisibility(View.VISIBLE);
-            }
+            @Override public void onFailure(Call<List<Produto>> call, Throwable t) {}
         });
     }
 
-    private void verificarPreco(Produto produto) {
-        if (produto.url == null || produto.url.isEmpty()) return;
-
-        tvStatus.setText("Verificando: " + (produto.titulo != null ? produto.titulo : "produto..."));
-        tvStatus.setVisibility(View.VISIBLE);
-
-        scrapWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                view.postDelayed(() -> {
-                    view.evaluateJavascript(EXTRACT_JS, value -> {
-                        if (value != null && value.startsWith("\"")) {
-                            String json = value.substring(1, value.length() - 1)
-                                    .replace("\\\"", "\"").replace("\\\\", "\\");
-                            try {
-                                JSONObject obj = new JSONObject(json);
-                                JSONArray prices = obj.optJSONArray("prices");
-                                double preco = 0;
-                                if (prices != null && prices.length() > 0) {
-                                    // Menor preço = preço com desconto
-                                    preco = prices.getDouble(0);
-                                }
-                                String titulo = obj.optString("title", "");
-                                String imagem = obj.optString("image", "");
-
-                                if (preco > 0) {
-                                    enviarPreco(produto, preco,
-                                        titulo.isEmpty() ? null : titulo,
-                                        imagem.isEmpty() ? null : imagem);
-                                }
-                                tvStatus.setVisibility(View.GONE);
-
-                                // Verifica próximo produto
-                                verificarProximo(produto);
-
-                            } catch (Exception e) {
-                                tvStatus.setText("Erro ao extrair: " + e.getMessage());
-                                tvStatus.setVisibility(View.GONE);
-                                verificarProximo(produto);
-                            }
-                        } else {
-                            tvStatus.setVisibility(View.GONE);
-                            verificarProximo(produto);
-                        }
-                    });
-                }, 5000);
-            }
-        });
-
-        scrapWebView.loadUrl(produto.url);
-    }
-
-    private void verificarProximo(Produto atual) {
-        boolean encontrouAtual = false;
-        for (Produto p : produtosAtuais) {
-            if (!encontrouAtual && p.id == atual.id) {
-                encontrouAtual = true;
-                continue;
-            }
-            if (encontrouAtual && p.precoAtual == null) {
-                new Handler(Looper.getMainLooper()).postDelayed(
-                    () -> verificarPreco(p), 2000);
-                return;
-            }
-        }
-        tvStatus.setVisibility(View.GONE);
-    }
-
-    private void enviarPreco(Produto produto, double preco, String titulo, String imagem) {
-        PrecoSubmit body = new PrecoSubmit(preco, titulo, imagem);
-        RetrofitClient.getService()
-            .registrarPreco(produto.id, body)
-            .enqueue(new Callback<Produto>() {
-                @Override
-                public void onResponse(Call<Produto> call, Response<Produto> response) {
+    private void onProdutoClick(Produto p, String acao) {
+        if ("historico".equals(acao)) {
+            Intent i = new Intent(this, HistoryActivity.class);
+            i.putExtra("produto_id", p.id);
+            i.putExtra("produto_titulo", p.titulo);
+            startActivity(i);
+        } else if ("deletar".equals(acao)) {
+            RetrofitClient.getService().deletarProduto(p.id).enqueue(new Callback<Void>() {
+                @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                    Toast.makeText(MainActivity.this, "Removido", Toast.LENGTH_SHORT).show();
                     carregarProdutos();
                 }
-
-                @Override
-                public void onFailure(Call<Produto> call, Throwable t) {}
+                @Override public void onFailure(Call<Void> call, Throwable t) {}
             });
-    }
-
-    private void carregarProdutos() {
-        RetrofitClient.getService().listarProdutos().enqueue(new Callback<List<Produto>>() {
-            @Override
-            public void onResponse(Call<List<Produto>> call, Response<List<Produto>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    produtosAtuais = response.body();
-                    adapter.atualizar(produtosAtuais);
-                    tvEmpty.setVisibility(produtosAtuais.isEmpty() ? View.VISIBLE : View.GONE);
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Produto>> call, Throwable t) {}
-        });
-    }
-
-    private void onProdutoClick(Produto produto, String acao) {
-        if ("historico".equals(acao)) {
-            Intent intent = new Intent(this, HistoryActivity.class);
-            intent.putExtra("produto_id", produto.id);
-            intent.putExtra("produto_titulo", produto.titulo);
-            startActivity(intent);
-        } else if ("deletar".equals(acao)) {
-            deletarProduto(produto);
         }
-    }
-
-    private void deletarProduto(Produto produto) {
-        RetrofitClient.getService().deletarProduto(produto.id).enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(MainActivity.this, "Removido", Toast.LENGTH_SHORT).show();
-                    carregarEVerificar();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {}
-        });
     }
 }
