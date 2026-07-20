@@ -37,23 +37,7 @@ public class MainActivity extends AppCompatActivity {
         setupWebView();
         log("=== Zara WebView Test ===");
         log("URL: " + TEST_URLS[0]);
-        log("IP: " + getLocalIpAddress());
         webView.loadUrl(TEST_URLS[0]);
-    }
-
-    private String getLocalIpAddress() {
-        try {
-            java.net.NetworkInterface intf = java.net.NetworkInterface.getNetworkInterfaces().nextElement();
-            for (java.net.Enumeration<java.net.InetAddress> enumIp = intf.getInetAddresses(); enumIp.hasMoreElements();) {
-                java.net.InetAddress inetAddress = enumIp.nextElement();
-                if (!inetAddress.isLoopbackAddress() && inetAddress instanceof java.net.Inet4Address) {
-                    return inetAddress.getHostAddress();
-                }
-            }
-        } catch (Exception e) {
-            return "?";
-        }
-        return "?";
     }
 
     private void setupWebView() {
