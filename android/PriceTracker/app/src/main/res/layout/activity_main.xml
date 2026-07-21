@@ -104,6 +104,24 @@
         android:textSize="16sp"
         android:visibility="visible" />
 
+    <!-- Log de debug (scrollável, fundo escuro, não desaparece) -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:background="#1A1A1A"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/tvLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:textColor="#00FF00"
+            android:text="=== LOG ===\n" />
+    </ScrollView>
+
     <!-- WebView para scraping (pequeno, fica atrás do conteúdo) -->
     <WebView
         android:id="@+id/scrapWebView"

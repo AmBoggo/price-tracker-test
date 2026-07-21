@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recycler;
     private ProdutoAdapter adapter;
     private ProgressBar progressBar;
-    private TextView tvEmpty, tvStatus;
+    private TextView tvEmpty, tvStatus, tvLog;
     private WebView scrapWebView;
     private List<Produto> produtosAtuais = new ArrayList<>();
     private Produto scrapAtual;
@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         tvEmpty = findViewById(R.id.tvEmpty);
         tvStatus = findViewById(R.id.tvStatus);
+        tvLog = findViewById(R.id.tvLog);
         scrapWebView = findViewById(R.id.scrapWebView);
 
         recycler.setLayoutManager(new LinearLayoutManager(this));
@@ -100,7 +101,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 if (scrapAtual == null) return;
+                log("PÁGINA CARREGADA: " + url.substring(0, Math.min(60, url.length())));
                 view.postDelayed(() -> {
+                    log("EXTRAINDO DADOS...");
                     view.evaluateJavascript(EXTRACT_JS, value -> processar(value));
                 }, 4000);
             }
@@ -143,6 +146,10 @@ public class MainActivity extends AppCompatActivity {
 
             tvStatus.setText((preco>0?"✓":"?") + " " + titulo + " | img:" + (imagem.isEmpty()?"NONE":imagem.substring(0,Math.min(30,imagem.length()))) + " | " + debug);
             tvStatus.setVisibility(View.VISIBLE);
+            log("PREÇO: " + preco);
+            log("TÍTULO: " + titulo);
+            log("IMAGEM: " + (imagem.isEmpty() ? "NENHUMA" : imagem));
+            log("DEBUG: " + debug);
 
             if (preco > 0) {
                 final double pf = preco;
@@ -165,6 +172,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void log(String msg) {
+        runOnUiThread(() -> tvLog.append(msg + "\n"));
+    }
+
     public void onAddClick(View view) {
         startActivity(new Intent(this, AddProductActivity.class));
     }
@@ -185,8 +196,8 @@ public class MainActivity extends AppCompatActivity {
                         for (Produto p : produtosAtuais) {
                             if (p.precoAtual == null) {
                                 scrapAtual = p;
-                                tvStatus.setText("Verificando " + p.url.substring(0,Math.min(30,p.url.length())) + "...");
                                 tvStatus.setVisibility(View.VISIBLE);
+                                log("CARREGANDO: " + p.url);
                                 scrapWebView.loadUrl(p.url);
                                 break;
                             }
