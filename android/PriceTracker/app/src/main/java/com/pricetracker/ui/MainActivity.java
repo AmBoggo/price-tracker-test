@@ -129,6 +129,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Se veio da notificação, força verificação
+        if (getIntent().getBooleanExtra("verificar_precos", false)) {
+            getIntent().removeExtra("verificar_precos");
+            // Marca todos como null pra forçar rescraping
+            for (Produto p : produtosAtuais) {
+                p.precoAtual = null;
+            }
+        }
         carregarProdutos();
     }
 
