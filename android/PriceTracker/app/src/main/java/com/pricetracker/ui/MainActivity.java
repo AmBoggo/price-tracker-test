@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
             String debug = obj.optString("debug","");
 
             tvStatus.setText((preco>0?"✓":"?") + " " + titulo + " | img:" + (imagem.isEmpty()?"NONE":imagem.substring(0,Math.min(30,imagem.length()))) + " | " + debug);
-            tvStatus.setVisibility(View.VISIBLE);
+            tvStatus.setVisibility(View.GONE); // log já mostra tudo
             log("PREÇO: " + preco);
             log("TÍTULO: " + titulo);
             log("IMAGEM: " + (imagem.isEmpty() ? "NENHUMA" : imagem));
@@ -210,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
                         for (Produto p : produtosAtuais) {
                             if (p.precoAtual == null) {
                                 scrapAtual = p;
-                                tvStatus.setVisibility(View.VISIBLE);
+                                tvStatus.setVisibility(View.GONE); // log já mostra tudo
                                 log("CARREGANDO: " + p.url);
                                 scrapWebView.loadUrl(p.url);
                                 break;
