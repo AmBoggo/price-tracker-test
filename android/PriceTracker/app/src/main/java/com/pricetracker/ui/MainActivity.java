@@ -52,13 +52,19 @@ public class MainActivity extends AppCompatActivity {
         " if(ps.length>1)ps.sort(function(a,b){return a-b});" +
         " var title=document.title||'';title=title.replace(/\\|.*/,'').trim();" +
         " var img=''; var debug=[];" +
-        " var og=document.querySelector('meta[property=og:image]');" +
-        " if(og){img=og.getAttribute('content'); debug.push('og:'+img.substring(0,50));}" +
-        " if(!img){var tw=document.querySelector('meta[name=twitter:image],meta[property=twitter:image]');" +
-        "   if(tw){img=tw.getAttribute('content'); debug.push('tw:'+img.substring(0,50));}}" +
-        " if(!img){var sc=document.querySelector('meta[itemprop=image]');" +
-        "   if(sc){img=sc.getAttribute('content'); debug.push('schema:'+img.substring(0,50));}}" +
-        " var imgs=document.querySelectorAll('img,picture img,source');" +
+        " var og=document.querySelector('meta[property=\"og:image\"]');" +
+        " if(og){img=og.getAttribute('content'); debug.push('ogok');}" +
+        " if(!img){" +
+        "   var metas=document.getElementsByTagName('meta');" +
+        "   for(var i=0;i<metas.length;i++){" +
+        "     var n=metas[i].getAttribute('name')||'';" +
+        "     var p=metas[i].getAttribute('property')||'';" +
+        "     if((n==='twitter:image'||p==='twitter:image'||p==='og:image')&&!img){" +
+        "       img=metas[i].getAttribute('content'); debug.push('meta:'+n+p);" +
+        "     }" +
+        "   }" +
+        " }" +
+        " var imgs=document.querySelectorAll('img');" +
         " debug.push('imgs:'+imgs.length);" +
         " if(!img&&imgs.length>0){" +
         "   for(var i=0;i<Math.min(imgs.length,20);i++){" +
@@ -83,6 +89,13 @@ public class MainActivity extends AppCompatActivity {
         tvEmpty = findViewById(R.id.tvEmpty);
         tvStatus = findViewById(R.id.tvStatus);
         tvLog = findViewById(R.id.tvLog);
+        tvLog.setOnLongClickListener(v -> {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("log", tvLog.getText());
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(this, "Log copiado!", Toast.LENGTH_SHORT).show();
+            return true;
+        });
         scrapWebView = findViewById(R.id.scrapWebView);
 
         recycler.setLayoutManager(new LinearLayoutManager(this));
@@ -134,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (obj.has("error")) {
                 tvStatus.setText("JS ERROR: " + obj.optString("error"));
+                log("JS ERROR: " + obj.optString("error"));
                 return;
             }
 
