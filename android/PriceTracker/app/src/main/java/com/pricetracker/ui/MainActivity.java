@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private WebView scrapWebView;
     private List<Produto> produtosAtuais = new ArrayList<>();
     private Produto scrapAtual;
+    private boolean forcarAtualizacao = false;
 
     private static final String EXTRACT_JS = "" +
         "(function(){try{" +
@@ -195,6 +196,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onRefreshClick(View view) {
+        log("=== FORÇANDO ATUALIZAÇÃO ===");
+        forcarAtualizacao = true;
         carregarProdutos();
     }
 
@@ -208,14 +211,14 @@ public class MainActivity extends AppCompatActivity {
                     tvEmpty.setVisibility(produtosAtuais.isEmpty() ? View.VISIBLE : View.GONE);
                     if (scrapAtual == null) {
                         for (Produto p : produtosAtuais) {
-                            if (p.precoAtual == null) {
+                            if (p.precoAtual == null || forcarAtualizacao) {
                                 scrapAtual = p;
-                                tvStatus.setVisibility(View.GONE); // log já mostra tudo
                                 log("CARREGANDO: " + p.url);
                                 scrapWebView.loadUrl(p.url);
                                 break;
                             }
                         }
+                        if (scrapAtual == null) forcarAtualizacao = false;
                     }
                 }
             }
