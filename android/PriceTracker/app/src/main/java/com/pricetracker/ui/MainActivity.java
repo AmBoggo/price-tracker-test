@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private WebView scrapWebView;
     private List<Produto> produtosAtuais = new ArrayList<>();
     private Produto scrapAtual;
-    private boolean forcarAtualizacao = false;
+    private java.util.Set<Integer> scrapPendentes = new java.util.HashSet<>();
 
     private static final String EXTRACT_JS = "" +
         "(function(){try{" +
@@ -136,10 +136,7 @@ public class MainActivity extends AppCompatActivity {
     private void processar(String value) {
         Produto p = scrapAtual;
         scrapAtual = null;
-        if (p == null || value == null || value.equals("null")) {
-            tvStatus.setVisibility(View.GONE);
-            return;
-        }
+        if (p == null || value == null || value.equals("null")) return;
         try {
             String json = value;
             if (json.startsWith("\"") && json.endsWith("\""))
@@ -174,8 +171,9 @@ public class MainActivity extends AppCompatActivity {
                     new PrecoSubmit(pf, tf.isEmpty()?null:tf, imf.isEmpty()?null:imf))
                     .enqueue(new Callback<Produto>() {
                         @Override public void onResponse(Call<Produto> c, Response<Produto> r) {
+                            scrapPendentes.remove(p.id);
+                            log("✓ " + pf + " | " + (scrapPendentes.isEmpty() ? "TODOS ATUALIZADOS!" : "faltam " + scrapPendentes.size()));
                             carregarProdutos();
-                            tvStatus.postDelayed(() -> tvStatus.setVisibility(View.GONE), 3000);
                         }
                         @Override public void onFailure(Call<Produto> c, Throwable t) {
                             tvStatus.setVisibility(View.GONE);
@@ -196,8 +194,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onRefreshClick(View view) {
-        log("=== FORÇANDO ATUALIZAÇÃO ===");
-        forcarAtualizacao = true;
+        if (!scrapPendentes.isEmpty()) return; // já está atualizando
+        for (Produto p : produtosAtuais) scrapPendentes.add(p.id);
+        log("=== ATUALIZANDO " + scrapPendentes.size() + " PRODUTOS ===");
+        Toast.makeText(this, "Atualizando " + scrapPendentes.size() + " produtos...", Toast.LENGTH_SHORT).show();
         carregarProdutos();
     }
 
@@ -211,14 +211,13 @@ public class MainActivity extends AppCompatActivity {
                     tvEmpty.setVisibility(produtosAtuais.isEmpty() ? View.VISIBLE : View.GONE);
                     if (scrapAtual == null) {
                         for (Produto p : produtosAtuais) {
-                            if (p.precoAtual == null || forcarAtualizacao) {
+                            if (p.precoAtual == null || scrapPendentes.contains(p.id)) {
                                 scrapAtual = p;
-                                log("CARREGANDO: " + p.url);
+                                log("[" + scrapPendentes.size() + " pendentes] " + p.url);
                                 scrapWebView.loadUrl(p.url);
                                 break;
                             }
                         }
-                        if (scrapAtual == null) forcarAtualizacao = false;
                     }
                 }
             }
